@@ -1,0 +1,26 @@
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h> //Header file for sleep(). man 3 sleep for details.
+
+struct Packet {
+  int type;
+  int sequenceNumber;
+  char payload[1024];
+  char checksum;
+};
+
+// char calculateChecksum() { return '0'; }
+
+void sendPackets() {}
+
+// void createConnection(){};
+
+int main() {
+
+  pthread_t type1Thread, type2Thread;
+
+  pthread_create(type1Thread, NULL, sendPackets, NULL);
+
+  return 0;
+}
