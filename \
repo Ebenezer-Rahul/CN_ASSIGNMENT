@@ -1,0 +1,125 @@
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h> //Header file for sleep(). man 3 sleep for details
+
+#define PORT 6000
+#define TYPE_1 1
+#define TYPE_2 2
+
+typedef struct Packet {
+  int type;
+  int sequenceNumber;
+  char payload[1024];
+  char checksum;
+} Packet;
+
+struct sockaddr_in reciver_addr;
+int sock_decr;
+
+void createConnection() {
+  sock_decr = socket(AF_INET, SOCK_DGRAM, 0);
+  if (sock_decr == -1) {
+    printf("socket creation Failed!!\n");
+    exit(0);
+  }
+  reciver_addr.sin_family = AF_INET;
+  reciver_addr.sin_port = htons(PORT);
+  reciver_addr.sin_addr.s_addr = INADDR_ANY;
+};
+
+char calculateChecksum(const char *s) {
+  char checksum = 0;
+  for (int i = 0; i < 1024; i++) {
+    checksum ^= s[i];
+  }
+  return checksum;
+}
+
+// global Variables
+Packet inProcessType1Packet;
+Packet inProcessType2Packet;
+
+sem_t signalType1ProcessingThread, signalType2ProcessingThread;
+sem_t reportLock;
+
+struct Report {
+  int type1Packets;
+  int type2Packets;
+} Report;
+
+void *recievePackets(void *args) {
+
+  while (1) {
+    Packet currPacket;
+
+    recvfrom(sock_decr, &currPacket, sizeof(struct Packet), 0,
+             (struct sockaddr *)sender_addr,
+             socklen_t *restrict addr_len) if (currPacket.type == 1) {
+      inProcessType1Packet = currPacket;
+      // signaltype1
+      // increment type1packets report
+    }
+    else if (currPacket.type == 2) {
+      inProcessType2Packet = currPacket;
+      // signal type2
+      // increment type2packets report
+    }
+    else {
+
+      printf("ERROR UNKNOWN TYPE RECIEVED\n");
+      exit(1);
+    }
+  }
+
+  return 0;
+}
+
+int checkforErrors(struct Packet *currPacket) {
+  if (currPacket->checksum != calculateChecksum(currPacket->payload)) {
+    printf("Error in Packet of type %d, and sequenceNumber : %d\n ",
+           currPacket->type, currPacket->sequenceNumber);
+    return 0;
+  }
+  return 1;
+}
+
+void processPacket(Packet curr) {}
+
+void reportStatuts() {}
+
+void *recievePacketsType2(void *args) {
+  // send type1packets every 100ms
+  return 0;
+}
+
+// void createConnection(){};
+
+int main() {
+
+  pthread_t recievingThread, type1ProcessingThread, type2ProcessingThread,
+      statusReportingThread;
+
+  struct Report currStatus;
+
+  createConnection();
+  memset(&currStatus, 0, sizeof(currStatus));
+
+  pthread_create(&recievingThread, NULL, recievePackets, NULL);
+  pthread_create(&type1ProcessingThread, NULL, recievePacketsType2, NULL);
+  pthread_create(&type2ProcessingThread, NULL, recievePacketsType2, NULL);
+  pthread_create(&statusReportingThread, NULL, recievePacketsType2, NULL);
+
+  pthread_join(recievingThread, NULL);
+  pthread_join(type1ProcessingThread, NULL);
+  pthread_join(type2ProcessingThread, NULL);
+  pthread_join(statusReportingThread, NULL);
+
+  return 0;
+}
