@@ -30,12 +30,17 @@ typedef struct Queue {
   LL *back;
 } Queue;
 
-LL temp;
+LL temp, temp2;
 
-Queue *createQueue() {
+Queue *createQueue(int a) {
   Queue *newQueue = (Queue *)malloc(sizeof(Queue));
-  newQueue->back = &temp;
-  newQueue->front = &temp;
+  if (a == 0) {
+    newQueue->back = &temp;
+    newQueue->front = &temp;
+  } else {
+    newQueue->back = &temp2;
+    newQueue->front = &temp2;
+  }
   temp.next = NULL;
   return newQueue;
 }
@@ -59,7 +64,7 @@ Packet *popFromQueue(Queue *q) {
   Packet *curr = q->front->next->packet;
   q->front->next = q->front->next->next;
   if (q->front->next == NULL) {
-    q->back = &temp;
+    q->back = q->front;
   }
   return curr;
 }
@@ -123,8 +128,8 @@ unsigned int sender_addr_len = sizeof(sender_addr);
 void *recievePackets(void *args) {
   printf("recievePackets\n");
 
-  type1packets = createQueue();
-  type2packets = createQueue();
+  type1packets = createQueue(0);
+  type2packets = createQueue(1);
 
   while (1) {
     Packet currPacket;
@@ -175,7 +180,7 @@ void *processPacket1() {
     Packet *curr = popFromQueue(type1packets);
     printf("type1 sequenceNumber:%d is RECIEVED\n", curr->sequenceNumber);
     sem_post(&type1QueueLock);
-    // free(curr);
+    free(curr);
   };
 
   return 0;
@@ -187,7 +192,7 @@ void *processPacket2() {
     Packet *curr = popFromQueue(type2packets);
     printf("type2 sequenceNumber:%d is RECIEVED\n", curr->sequenceNumber);
     sem_post(&type2QueueLock);
-    // free(curr);
+    free(curr);
   }
   return 0;
 }
